@@ -1,20 +1,22 @@
 
 import React from 'react';
-import { requestApiKey } from '../services/gemini';
+import { setStoredApiKey } from '../services/gemini';
 
 interface ApiKeyNoticeProps {
   onKeySelected: () => void;
 }
 
 const ApiKeyNotice: React.FC<ApiKeyNoticeProps> = ({ onKeySelected }) => {
-  const handleSelectKey = async () => {
-    try {
-      await requestApiKey();
-      // Assume success as per instructions to avoid race condition
-      onKeySelected();
-    } catch (error) {
-      console.error("Failed to open key selection", error);
+  const [apiKey, setApiKey] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  const handleSaveKey = () => {
+    if (!apiKey.trim()) {
+      setError("Please enter a valid API key.");
+      return;
     }
+    setStoredApiKey(apiKey);
+    onKeySelected();
   };
 
   return (
@@ -25,14 +27,27 @@ const ApiKeyNotice: React.FC<ApiKeyNoticeProps> = ({ onKeySelected }) => {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">API Key Required</h2>
         <p className="text-gray-600 mb-6 leading-relaxed">
-          To generate premium icons and high-quality animations, you need to select a valid API key from a paid GCP project.
+          Enter your Gemini API key to generate premium icons and high-quality animations.
         </p>
         <div className="space-y-4">
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => {
+              setApiKey(e.target.value);
+              if (error) setError('');
+            }}
+            placeholder="Paste your Gemini API key"
+            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900"
+          />
+          {error && (
+            <div className="text-sm text-red-600 font-medium">{error}</div>
+          )}
           <button
-            onClick={handleSelectKey}
+            onClick={handleSaveKey}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-indigo-200"
           >
-            Select API Key
+            Save API Key
           </button>
           <a
             href="https://ai.google.dev/gemini-api/docs/billing"

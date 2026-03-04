@@ -2,26 +2,35 @@
 import { GoogleGenAI } from "@google/genai";
 import { getIconStyleJson, StyleConfig } from "../types";
 
-// Removed global Window interface extension to avoid conflict with existing AIStudio type definitions.
-// We use casting to any when accessing window.aistudio to ensure compatibility in the execution context.
+const API_KEY_STORAGE = "iconoanimate_api_key";
 
-export const checkApiKey = async (): Promise<boolean> => {
-  try {
-    // Accessing window.aistudio using casting to any to avoid property declaration conflicts.
-    return await (window as any).aistudio.hasSelectedApiKey();
-  } catch (e) {
-    return false;
+export const getStoredApiKey = (): string => {
+  return localStorage.getItem(API_KEY_STORAGE) || "";
+};
+
+export const setStoredApiKey = (key: string): void => {
+  if (key.trim()) {
+    localStorage.setItem(API_KEY_STORAGE, key.trim());
   }
 };
 
-export const requestApiKey = async (): Promise<void> => {
-  // Accessing window.aistudio using casting to any to avoid property declaration conflicts.
-  await (window as any).aistudio.openSelectKey();
+export const clearStoredApiKey = (): void => {
+  localStorage.removeItem(API_KEY_STORAGE);
+};
+
+export const checkApiKey = async (): Promise<boolean> => {
+  return !!getStoredApiKey();
+};
+
+const resolveApiKey = (): string => {
+  return getStoredApiKey() || process.env.API_KEY || "";
 };
 
 export const generateIconImage = async (idea: string, config: StyleConfig): Promise<string> => {
-  // Always create a new GoogleGenAI instance right before making an API call to ensure it uses the latest selected key.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Always create a new GoogleGenAI instance right before making an API call to ensure it uses the latest key.
+  const apiKey = resolveApiKey();
+  if (!apiKey) throw new Error("Missing API key");
+  const ai = new GoogleGenAI({ apiKey });
   const styleJson = getIconStyleJson(config);
   const prompt = `generate a ${idea} ${config.format} with this json style ${JSON.stringify(styleJson)}`;
 
@@ -55,7 +64,9 @@ export const animateIconVideo = async (
   onProgress: (status: string) => void
 ): Promise<string> => {
   // Create a new GoogleGenAI instance right before making an API call to ensure it always uses the most up-to-date API key.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = resolveApiKey();
+  if (!apiKey) throw new Error("Missing API key");
+  const ai = new GoogleGenAI({ apiKey });
   
   const videoPrompt = `Create a seamless loop animation of a soft 3D ${idea} ${format} performing a simple motion. The animation should include ${action}. All other elements must remain completely still. The background, lighting, and camera angle should match the reference image exactly. The motion should be smooth, subtle, and optimized for web or UI use. The animation must loop perfectly with no visible start or end.`;
 
@@ -99,7 +110,7 @@ export const animateIconVideo = async (
   if (!downloadLink) throw new Error("Video generation failed to return a URI");
 
   // Appending the API key to the fetch request as required for accessing video download links.
-  const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+  const response = await fetch(`${downloadLink}&key=${apiKey}`);
   const blob = await response.blob();
   return URL.createObjectURL(blob);
 };

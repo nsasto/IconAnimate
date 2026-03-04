@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { requestApiKey } from '../services/gemini';
+import { clearStoredApiKey, setStoredApiKey } from '../services/gemini';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -12,12 +12,11 @@ interface SettingsMenuProps {
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, onClearGallery, hasIcons }) => {
   if (!isOpen) return null;
 
-  const handleUpdateKey = async () => {
-    try {
-      await requestApiKey();
+  const handleUpdateKey = () => {
+    const nextKey = prompt("Enter your Gemini API key:");
+    if (nextKey && nextKey.trim()) {
+      setStoredApiKey(nextKey);
       onClose();
-    } catch (error) {
-      console.error("Failed to open key selection", error);
     }
   };
 
@@ -43,6 +42,22 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, onClearGal
             <div>
               <p className="text-sm font-bold">Manage API Key</p>
               <p className="text-[10px] text-gray-400">Add or change your active key</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              clearStoredApiKey();
+              onClose();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-gray-700 hover:text-gray-600 transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-gray-600 group-hover:text-white transition-colors">
+              <i className="fas fa-unlock text-sm"></i>
+            </div>
+            <div>
+              <p className="text-sm font-bold">Clear API Key</p>
+              <p className="text-[10px] text-gray-400">Remove local key storage</p>
             </div>
           </button>
 
